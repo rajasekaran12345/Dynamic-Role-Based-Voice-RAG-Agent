@@ -1,0 +1,26 @@
+[
+  {
+    "chunk_id": "legal.txt_0",
+    "chunk_index": 0,
+    "filename": "legal.txt",
+    "text": "############################################################ FILE: LEGAL.txt ############################################################ [DOCUMENT] department: Legal document_id: LEG-001 title: Contract Review and Approval version: 1.0 effective_date: 2026-01-01 owner: Legal Operations status: Active confidentiality: Confidential jurisdiction: India keywords: contract, agreement, legal review, approval, liability CONTENT: All non-standard customer, supplier, partnership, and data-processing agreements must be submitted to Legal before signature. The request should include the counterparty, business owner, contract value, term, renewal language, data access, and proposed deviations from approved templates. Business owners may not sign on behalf of the company unless they hold documented signing authority. Material changes to liability, indemnity, intellectual property, confidentiality, termination, governing law, or data protection require Legal review. The authorized signatory gives final approval under the company's delegation matrix. [END DOCUMENT] [DOCUMENT] department: Legal document_id: LEG-002 title: Data Privacy Incident Response version: 1.0 effective_date: 2026-02-01 owner: Privacy and Legal status: Active confidentiality: Restricted jurisdiction:"
+  },
+  {
+    "chunk_id": "legal.txt_1",
+    "chunk_index": 1,
+    "filename": "legal.txt",
+    "text": "document_id: LEG-002 title: Data Privacy Incident Response version: 1.0 effective_date: 2026-02-01 owner: Privacy and Legal status: Active confidentiality: Restricted jurisdiction: India keywords: privacy, personal data, breach, incident, notification CONTENT: Anyone who suspects unauthorized access, disclosure, alteration, or loss of personal data must promptly report it through the security incident channel. Preserve relevant evidence and do not independently delete logs or notify external parties unless authorized. Security investigates containment and technical scope. Privacy and Legal assess affected data, individuals, contractual duties, and applicable notification requirements with relevant stakeholders. The incident owner records discovery time, affected systems, categories of data, containment actions, decisions, and follow-up tasks. Notification deadlines and legal duties depend on the facts and applicable law; do not infer a universal deadline from this sample. [END DOCUMENT] [DOCUMENT] department: Legal document_id: LEG-003 title: Records Retention and Legal Hold version: 1.0"
+  },
+  {
+    "chunk_id": "legal.txt_2",
+    "chunk_index": 2,
+    "filename": "legal.txt",
+    "text": "universal deadline from this sample. [END DOCUMENT] [DOCUMENT] department: Legal document_id: LEG-003 title: Records Retention and Legal Hold version: 1.0 effective_date: 2026-03-01 owner: Legal Operations status: Active confidentiality: Confidential jurisdiction: India keywords: retention, records, legal hold, litigation, deletion CONTENT: Business records must be stored in approved systems and retained according to the applicable retention schedule. When Legal issues a legal hold, recipients must suspend routine deletion of relevant records, preserve potentially relevant emails and files, and follow the hold instructions. Employees must not destroy, alter, or conceal records subject to a hold. Only Legal may release a legal hold. If an employee is unsure whether a record is covered, they should ask Legal before deleting it. Retention periods vary by record type and applicable requirements. [END DOCUMENT] [DOCUMENT] department: Legal document_id: LEG-004 title: Intellectual Property and Confidentiality version: 1.0 effective_date:"
+  },
+  {
+    "chunk_id": "legal.txt_3",
+    "chunk_index": 3,
+    "filename": "legal.txt",
+    "text": "record type and applicable requirements. [END DOCUMENT] [DOCUMENT] department: Legal document_id: LEG-004 title: Intellectual Property and Confidentiality version: 1.0 effective_date: 2026-04-01 owner: Legal Operations status: Active confidentiality: Confidential jurisdiction: India keywords: intellectual property, IP, confidentiality, open source, invention CONTENT: Employees should store confidential company information in approved systems and share it only with authorized recipients for a legitimate business purpose. Before using third-party code, datasets, images, model weights, or other materials in a company deliverable, teams must check the applicable license and approval requirements. Public accessibility does not mean that material is free of restrictions. Invention and work-product ownership depend on contracts, applicable law, and the circumstances. Refer ownership or licensing questions to Legal rather than making assumptions. [END DOCUMENT]"
+  }
+]

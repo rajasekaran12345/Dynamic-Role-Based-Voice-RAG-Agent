@@ -44,6 +44,19 @@ export default function ChatArea({
   const isSpeakingRef = useRef(false);
   const silenceTimerRef = useRef(null);
 
+  // Audio-level silence detection refs
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const silenceStartRef = useRef(null);
+  const speechDetectedRef = useRef(false);
+  const vadFrameIdRef = useRef(null);
+  const isProcessingRef = useRef(false);
+
+  // Configurable silence thresholds
+  const SILENCE_THRESHOLD = 15;     // RMS level below which = silence (0-128 scale)
+  const SILENCE_DURATION_MS = 1500; // Stop after 1.5s of silence
+  const MIN_SPEECH_MS = 400;        // Minimum speech duration to count as valid
+
   // Keep ref synchronized
   useEffect(() => {
     voiceModeActiveRef.current = voiceModeActive;
@@ -83,6 +96,8 @@ export default function ChatArea({
       audio.pause();
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       stopListening();
+      stopVADMonitor();
+      isProcessingRef.current = false;
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         try { mediaRecorderRef.current.stop(); } catch (e) {}
       }
@@ -299,12 +314,156 @@ export default function ChatArea({
     });
   };
 
+  // ---- Audio-Level Voice Activity Detection (VAD) using Web Audio API ----
+  const startVADMonitor = () => {
+    if (!micStreamRef.current) return;
+
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = audioCtx;
+
+      const source = audioCtx.createMediaStreamSource(micStreamRef.current);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.3;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      silenceStartRef.current = null;
+      speechDetectedRef.current = false;
+      const speechStartTime = { current: null };
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkAudioLevel = () => {
+        if (!voiceModeActiveRef.current || isSpeakingRef.current || isProcessingRef.current) {
+          vadFrameIdRef.current = requestAnimationFrame(checkAudioLevel);
+          return;
+        }
+
+        analyser.getByteTimeDomainData(dataArray);
+
+        // Calculate RMS (root mean square) audio level
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          const val = dataArray[i] - 128; // center around 0
+          sum += val * val;
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+
+        const now = Date.now();
+
+        if (rms > SILENCE_THRESHOLD) {
+          // User is speaking
+          silenceStartRef.current = null;
+          if (!speechDetectedRef.current) {
+            speechDetectedRef.current = true;
+            speechStartTime.current = now;
+            console.log("[VAD] Speech started");
+          }
+        } else {
+          // Silence detected
+          if (speechDetectedRef.current && !silenceStartRef.current) {
+            silenceStartRef.current = now;
+          }
+
+          // Check if silence has lasted long enough after valid speech
+          if (
+            speechDetectedRef.current &&
+            silenceStartRef.current &&
+            (now - silenceStartRef.current) >= SILENCE_DURATION_MS
+          ) {
+            const speechDuration = silenceStartRef.current - (speechStartTime.current || now);
+            if (speechDuration >= MIN_SPEECH_MS) {
+              console.log(`[VAD] Silence detected after ${speechDuration}ms of speech — triggering STT`);
+              // Reset state before processing
+              speechDetectedRef.current = false;
+              silenceStartRef.current = null;
+              speechStartTime.current = null;
+              triggerSTTConversion();
+              // Don't schedule next frame — triggerSTTConversion will restart listening
+              return;
+            } else {
+              // Speech too short, reset and keep listening
+              speechDetectedRef.current = false;
+              silenceStartRef.current = null;
+              speechStartTime.current = null;
+            }
+          }
+        }
+
+        vadFrameIdRef.current = requestAnimationFrame(checkAudioLevel);
+      };
+
+      vadFrameIdRef.current = requestAnimationFrame(checkAudioLevel);
+    } catch (e) {
+      console.error("VAD monitor error:", e);
+    }
+  };
+
+  const stopVADMonitor = () => {
+    if (vadFrameIdRef.current) {
+      cancelAnimationFrame(vadFrameIdRef.current);
+      vadFrameIdRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try { audioContextRef.current.close(); } catch (e) {}
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    silenceStartRef.current = null;
+    speechDetectedRef.current = false;
+  };
+
+  // Core: when silence is detected, stop recording → STT → LLM → speak → restart
+  const triggerSTTConversion = async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
+    // Stop the Web Speech API (if running) and capture its last result
+    let webSpeechText = '';
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+      recognitionRef.current = null;
+    }
+    // Grab whatever was in the input bar from Web Speech interim results
+    webSpeechText = input?.trim() || liveTranscription?.trim() || '';
+
+    setVoiceStatus('processing');
+
+    // Transcribe via LiveKit Deepgram Nova-3 STT from recorded audio
+    const livekitTranscribed = await stopAndTranscribeLiveKit();
+    const finalPrompt = (livekitTranscribed || webSpeechText || '').trim();
+
+    if (finalPrompt) {
+      console.log(`[STT] Final prompt: "${finalPrompt}"`);
+      setInput(finalPrompt);
+      setLiveTranscription('');
+      isProcessingRef.current = false;
+      await executeQuery(finalPrompt);
+    } else {
+      console.log("[STT] No speech detected, resuming listening");
+      isProcessingRef.current = false;
+      if (voiceModeActiveRef.current) {
+        setVoiceStatus('listening');
+        startListening();
+      } else {
+        setVoiceStatus('idle');
+      }
+    }
+  };
+
   const startListening = () => {
-    if (isSpeakingRef.current) return;
+    if (isSpeakingRef.current || isProcessingRef.current) return;
 
     // Start audio recorder for LiveKit STT (Deepgram Nova-3)
     startMediaRecording();
 
+    // Start VAD (audio-level silence detection)
+    stopVADMonitor(); // Clean up any previous monitor
+    startVADMonitor();
+
+    // Also start Web Speech API for real-time interim text display in search bar
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
@@ -324,6 +483,8 @@ export default function ChatArea({
       };
 
       recognition.onresult = (event) => {
+        if (isProcessingRef.current) return; // Ignore late results during processing
+
         let interim = '';
         let finalChunk = '';
 
@@ -337,45 +498,9 @@ export default function ChatArea({
 
         const currentSaid = (finalChunk || interim).trim();
         if (currentSaid) {
-          // Immediately populate the search bar in real time while user speaks
+          // Show real-time transcription in the search bar while user speaks
           setLiveTranscription(currentSaid);
           setInput(currentSaid);
-        }
-
-        const processCompleteSpeech = async (fallbackSaid) => {
-          stopListening();
-          setVoiceStatus('processing');
-
-          // Transcribe via LiveKit Deepgram Nova-3 STT inference from captured audio stream
-          const livekitTranscribed = await stopAndTranscribeLiveKit();
-          const finalPrompt = (livekitTranscribed || fallbackSaid || '').trim();
-
-          if (finalPrompt) {
-            // Generate and confirm the converted text directly in the search bar
-            setInput(finalPrompt);
-            setLiveTranscription('');
-            await executeQuery(finalPrompt);
-          } else {
-            if (voiceModeActiveRef.current) {
-              setVoiceStatus('listening');
-              startListening();
-            } else {
-              setVoiceStatus('idle');
-            }
-          }
-        };
-
-        // Auto-submit after silence or final sentence
-        if (finalChunk.trim().length > 0) {
-          processCompleteSpeech(finalChunk.trim());
-        } else if (interim.trim().length > 2) {
-          // Debounced auto-submit if speaker pauses for 1.4s
-          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = setTimeout(() => {
-            if (voiceModeActiveRef.current && !isSpeakingRef.current && interim.trim()) {
-              processCompleteSpeech(interim.trim());
-            }
-          }, 1400);
         }
       };
 
@@ -391,8 +516,8 @@ export default function ChatArea({
       };
 
       recognition.onend = () => {
-        // Automatically restart if voice mode is still active and assistant is NOT speaking
-        if (voiceModeActiveRef.current && !isSpeakingRef.current) {
+        // Restart Web Speech API for real-time display if still in voice mode
+        if (voiceModeActiveRef.current && !isSpeakingRef.current && !isProcessingRef.current) {
           try {
             recognition.start();
           } catch (e) {}
@@ -408,6 +533,7 @@ export default function ChatArea({
 
   const stopListening = () => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    stopVADMonitor();
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
@@ -433,7 +559,9 @@ export default function ChatArea({
       setVoiceStatus('idle');
       setLiveTranscription('');
       isSpeakingRef.current = false;
+      isProcessingRef.current = false;
       stopListening();
+      stopVADMonitor();
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         try { mediaRecorderRef.current.stop(); } catch (e) {}
       }
@@ -504,7 +632,7 @@ export default function ChatArea({
               {voiceStatus === 'listening' && (
                 <span className="text-emerald-300 flex items-center gap-1.5 animate-pulse">
                   <Headphones className="w-3.5 h-3.5" />
-                  LiveKit STT (Deepgram Nova-3) listening... Speech generates in search bar!
+                  LiveKit STT (Deepgram Nova-3) listening... Auto-submits when you pause speaking!
                 </span>
               )}
               {voiceStatus === 'processing' && (

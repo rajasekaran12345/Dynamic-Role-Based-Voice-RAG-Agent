@@ -1,0 +1,66 @@
+[DOCUMENT]
+department: HR
+document_id: HR-001
+title: Employee Leave Policy
+version: 1.2
+effective_date: 2026-01-01
+owner: Human Resources
+status: Active
+confidentiality: Internal
+jurisdiction: India
+keywords: leave, annual leave, sick leave, casual leave, approval
+
+CONTENT:
+Full-time employees receive 18 working days of annual leave per calendar year, accrued monthly. Employees may use up to 8 sick-leave days per calendar year. A medical certificate may be requested for an absence exceeding 2 consecutive working days. Employees may use up to 6 casual-leave days per calendar year. Planned leave should be submitted through the HR portal at least 5 working days in advance. The line manager approves or rejects leave requests based on staffing and policy. Up to 5 unused annual-leave days may be carried forward, subject to applicable requirements and the recorded leave balance.
+[END DOCUMENT]
+
+
+[DOCUMENT]
+department: HR
+document_id: HR-002
+title: Recruitment and Interview Process
+version: 1.0
+effective_date: 2026-02-01
+owner: Talent Acquisition
+status: Active
+confidentiality: Internal
+jurisdiction: India
+keywords: recruitment, hiring, interview, offer, background verification
+
+CONTENT:
+The hiring manager submits an approved job requisition with job title, level, budget, location, and required skills. Talent Acquisition screens applications using job-related criteria. Interviewers use role-relevant questions and a documented scorecard. The hiring manager records the selection rationale. Conflicts of interest must be disclosed to HR before a decision. HR verifies approvals and issues the offer. Background checks, where applicable, must follow the relevant law and company process, including candidate notice or consent where required. Recruitment records must be stored in approved systems and access must be limited to authorized personnel.
+[END DOCUMENT]
+
+
+[DOCUMENT]
+department: HR
+document_id: HR-003
+title: Remote Work and Attendance
+version: 1.1
+effective_date: 2026-03-01
+owner: Human Resources
+status: Active
+confidentiality: Internal
+jurisdiction: India
+keywords: remote work, attendance, hybrid, working hours, manager approval
+
+CONTENT:
+Employees assigned to hybrid work may work remotely up to 2 days per week when their role and team coverage permit. Employees must record their work location in the approved attendance system. The manager approves weekly schedules and may request on-site attendance for customer meetings, collaboration, or operational needs. Employees must protect company information when working remotely, use approved devices and networks, lock screens, and report suspected security incidents promptly. HR handles policy questions; IT handles device and access troubleshooting.
+[END DOCUMENT]
+
+
+[DOCUMENT]
+department: HR
+document_id: HR-004
+title: Employee Grievance and Anti-Harassment Reporting
+version: 1.0
+effective_date: 2026-01-15
+owner: People Operations
+status: Active
+confidentiality: Restricted
+jurisdiction: India
+keywords: grievance, harassment, complaint, retaliation, investigation
+
+CONTENT:
+Employees may report workplace concerns to HR, the designated grievance channel, or another approved reporting contact. Reports should be handled promptly and impartially, with access limited to people who need the information. Retaliation against someone who raises a concern in good faith or participates in an investigation is prohibited under this fictional policy. HR acknowledges reports, determines the appropriate review process, maintains appropriate records, and communicates outcomes to the extent permitted. Do not promise absolute confidentiality because information may need to be shared to investigate fairly or meet legal obligations.
+[END DOCUMENT]
